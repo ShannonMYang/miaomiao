@@ -1,6 +1,6 @@
 <template>
     <div class="city_body">
-				<div class="city_list">
+				<!-- <div class="city_list">
 					<div class="city_hot">
 						<h2>热门城市</h2>
 						<ul class="clearfix">
@@ -24,51 +24,6 @@
 								<li>安阳</li>
 							</ul>
 						</div>
-						<div>
-							<h2>B</h2>
-							<ul>
-								<li>北京</li>
-								<li>保定</li>
-								<li>蚌埠</li>
-								<li>包头</li>
-							</ul>
-						</div>
-						<div>
-							<h2>A</h2>
-							<ul>
-								<li>阿拉善盟</li>
-								<li>鞍山</li>
-								<li>安庆</li>
-								<li>安阳</li>
-							</ul>
-						</div>
-						<div>
-							<h2>B</h2>
-							<ul>
-								<li>北京</li>
-								<li>保定</li>
-								<li>蚌埠</li>
-								<li>包头</li>
-							</ul>
-						</div>
-						<div>
-							<h2>A</h2>
-							<ul>
-								<li>阿拉善盟</li>
-								<li>鞍山</li>
-								<li>安庆</li>
-								<li>安阳</li>
-							</ul>
-						</div>
-						<div>
-							<h2>B</h2>
-							<ul>
-								<li>北京</li>
-								<li>保定</li>
-								<li>蚌埠</li>
-								<li>包头</li>
-							</ul>
-						</div>	
 					</div>
 				</div>
 				<div class="city_index">
@@ -79,13 +34,115 @@
 						<li>D</li>
 						<li>E</li>
 					</ul>
+				</div> -->
+                <div class="city_list">
+                    <div class="city_hot">
+						<h2>热门城市</h2>
+						<ul class="clearfix">
+							<li v-for="item in hotList" :key="item.id">{{ item.nm }}</li>
+						</ul>
+					</div>
+                    <div class="city_sort" ref="city_sort">
+						<div v-for="item in cityList" :key="item.index">
+							<h2>{{ item.index }}</h2>
+							<ul>
+								<li v-for="itemList in item.list" :key="itemList.id">{{ itemList.nm }}</li>
+							</ul>
+						</div>
+                    </div>
+                </div>
+                <div class="city_index">
+					<ul>
+						<li v-for="(item,index) in cityList" :key="item.index" @touchstart="handleToIndex(index)">{{ item.index }}</li>
+					</ul>
 				</div>
 			</div>
 </template>
 
 <script>
+import { hostname } from 'os';
 export default {
-    name : 'City'
+    name : 'City',
+    data(){
+        return {
+            cityList : [],
+            hotList : []
+        }
+    },
+    mounted(){
+        this.axios.get('/api/cityList').then((res)=>{
+            var msg = res.data.msg;
+            if (msg === 'ok') {
+                var cities = res.data.data.cities;
+                // [{ index : 'A', list :[{ nm : '阿城', id : 123}]}]
+                var { cityList, hotList } = this.formaCityList(cities);
+                this.cityList = cityList;
+                this.hotList = hotList;
+            }
+        });
+    },
+    methods : {
+        formaCityList(cities){
+            var cityList = [];
+            var hotList = [];
+
+            for (var i = 0; i < cities.length; i++) {
+                // 截取出地名的拼音首字母，转换为大写；
+                var firstLetter = cities[i].py.substring(0,1).toUpperCase();
+                if (toCom(firstLetter)) {
+                    // 不存在；故而，添加新的 index；
+                    cityList.push( { index : firstLetter, list : [ { nm : cities[i].nm, id : cities[i].id } ] } );
+                } else {
+                    // 存在；故而，累加到已有的 index 中；
+                    for (var j = 0; j < cityList.length; j++) {
+                        if (cityList[j].index === firstLetter) {
+                            cityList[j].list.push( { nm : cities[i].nm, id : cities[i].id } );
+                        }
+                    }
+                }
+            }
+
+            function toCom(firstLetter) {
+                for (var i = 0; i < cityList.length; i++) {
+                    if (cityList[i].index === firstLetter) {
+                        // 如果已存在此首字母，则返回 false；
+                        return false;
+                    }
+                }
+                // 如果均不存在，则返回 true；
+                return true;
+            }
+            
+            // 将得到的数组进行一个排序；
+            cityList.sort((n1,n2)=>{
+                if (n1.index > n2.index) {
+                    return 1;
+                }
+                else if (n1.index < n2.index) {
+                    return -1;
+                }
+                else {
+                    return 0;
+                }
+            });
+
+            for (var i = 0; i < cities.length; i++) {
+                if (cities[i].isHot === 1) {
+                    hotList.push( cities[i] );
+                }
+            }
+            
+            return {
+                cityList,
+                hotList
+            }
+        },
+        handleToIndex(index){ // 根据点击传回来的 index，进行滚动；
+            var h2 = this.$refs.city_sort.getElementsByTagName('h2');
+            // 改变滚动条点击后的位置；
+            this.$refs.city_sort.parentNode.scrollTop = h2[index].offsetTop;
+        }
+    }
 }
 </script>
 
