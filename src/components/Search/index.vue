@@ -53,9 +53,10 @@ export default {
     watch : {
         message(newVal){
             var that = this;
+            var cityId = this.$store.state.city.id;
             this.cancelRequest();
             // 函数防抖策略，输入结束的时候，再进行搜索；防止多次触发；
-            this.axios.get('/api/searchList?cityId=10&kw='+newVal,{
+            this.axios.get('/api/searchList?cityId='+ cityId +'&kw='+newVal,{
                 cancelToken: new this.axios.CancelToken(function executor(c) {
                     that.source = c;
                 })
